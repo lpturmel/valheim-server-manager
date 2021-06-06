@@ -59,10 +59,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     const cookies = new Cookies(req, res);
 
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
+
     cookies.set("token", token, {
         httpOnly: true,
-        maxAge: 3600000,
         path: "/",
+        expires: expiryDate,
         overwrite: true,
     });
 
