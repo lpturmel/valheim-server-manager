@@ -1,5 +1,6 @@
 import { Alert } from "@chakra-ui/alert";
-import { Button } from "@chakra-ui/button";
+import { Button, IconButton } from "@chakra-ui/button";
+import { CopyIcon } from "@chakra-ui/icons";
 
 import {
     AlertIcon,
@@ -10,6 +11,8 @@ import {
     HStack,
     VStack,
     Text,
+    Input,
+    useToast,
 } from "@chakra-ui/react";
 import React from "react";
 import useStart from "../mutations/useStart";
@@ -22,6 +25,7 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
     const { data, isLoading, error, refetch } = useStatus();
     const _stopInstance = useStop();
     const _startInstance = useStart();
+    const toast = useToast();
 
     const handleServerStart = () => {
         _startInstance.mutate();
@@ -60,6 +64,19 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
             return "yellow";
         }
     };
+
+    const writeToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        if (!toast.isActive("CopiedToClipboard")) {
+            toast({
+                title: "Copied to clipboard",
+                status: "info",
+                duration: 5000,
+                id: "CopiedToClipboard",
+                isClosable: true,
+            });
+        }
+    };
     return (
         <VStack
             h="100vh"
@@ -79,10 +96,17 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
                 </Alert>
             )}
             {!isLoading && data && (
-                <VStack bg="rgb(217, 186, 157, 0.3)" p={8}>
-                    <HStack w="100%">
+                <VStack
+                    borderRadius="8px"
+                    w="650px"
+                    wrap="wrap"
+                    bg="rgb(217, 186, 157, 0.3)"
+                    p={8}
+                    spacing={4}
+                >
+                    <HStack justifyContent="space-between" w="100%">
                         <Heading>Valheim Server</Heading>
-                        <HStack>
+                        <HStack h="100%">
                             <HStack>
                                 <Text fontWeight="semibold">status: </Text>
                                 <Badge colorScheme={getStateColor(data.state)}>
@@ -91,16 +115,53 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
                             </HStack>
                         </HStack>
                     </HStack>
-                    <HStack>
+                    <VStack>
+                        <HStack>
+                            <Text fontWeight="semibold">IP Address:</Text>
+                            <Text>
+                                {data.ipAddress}:{data.port}
+                            </Text>
+                            <IconButton
+                                onClick={() =>
+                                    writeToClipboard(
+                                        `${data.ipAddress}:${data.port}`
+                                    )
+                                }
+                                size="sm"
+                                aria-label="copy"
+                            >
+                                <CopyIcon />
+                            </IconButton>
+                        </HStack>
+                        <HStack>
+                            <Text fontWeight="semibold">Password:</Text>
+                            <Input
+                                variant="unstyled"
+                                value={data.password}
+                                type="password"
+                            />
+
+                            <IconButton
+                                onClick={() => writeToClipboard(data.password)}
+                                size="sm"
+                                aria-label="copy"
+                            >
+                                <CopyIcon />
+                            </IconButton>
+                        </HStack>
+                    </VStack>
+                    <HStack w="100%" justifyContent="flex-end">
                         <Button
                             disabled={getStateColor(data.state) === "green"}
                             onClick={handleServerStart}
+                            colorScheme="green"
                         >
                             Start
                         </Button>
                         <Button
                             disabled={getStateColor(data.state) === "red"}
                             onClick={handleServerStop}
+                            colorScheme="red"
                         >
                             Stop
                         </Button>

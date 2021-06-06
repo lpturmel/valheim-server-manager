@@ -35,6 +35,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const response = {
             state: instances.Reservations[0].Instances[0].State.Name,
             ipAddress: instances.Reservations[0].Instances[0].PublicIpAddress,
+            port: process.env.CV_AWS_SERVER_PORT,
+            password: process.env.CV_VALHEIM_PASSWORD,
         };
 
         res.json(response);
