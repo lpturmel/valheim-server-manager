@@ -14,14 +14,22 @@ import {
     Input,
     useToast,
 } from "@chakra-ui/react";
+import Cookies from "cookies";
+import { DBConsoleClient } from "dynamo-sdk/dist";
+import { GetServerSideProps, GetServerSidePropsContext } from "next";
 import React from "react";
+import Navbar from "../components/Navbar";
 import useStart from "../mutations/useStart";
 import useStop from "../mutations/useStop";
 import useStatus from "../queries/useStatus";
+import User from "../types/entities/User";
+import validateJWT from "../utils/validateJWT";
 
-export interface ServerPageProps {}
+export interface ServerPageProps {
+    user: User;
+}
 
-const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
+const ServerPage: React.FunctionComponent<ServerPageProps> = ({ user }) => {
     const { data, isLoading, error, refetch } = useStatus();
     const _stopInstance = useStop();
     const _startInstance = useStart();
@@ -86,12 +94,13 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
             alignItems="center"
             justifyContent="center"
         >
+            <Navbar user={user} />
             {error && (
-                <Alert status="error" position="absolute" top={0} left={0}>
+                <Alert status="error" position="absolute" top={10} left={0}>
                     <AlertIcon />
                     <AlertTitle mr={2}>Your browser is outdated!</AlertTitle>
                     <AlertDescription>
-                        {(error as any).response.data.error}
+                        {/* {(error as any).response.data.error} */}
                     </AlertDescription>
                 </Alert>
             )}
@@ -172,4 +181,44 @@ const ServerPage: React.FunctionComponent<ServerPageProps> = () => {
     );
 };
 
+export const getServerSideProps: GetServerSideProps = async (
+    context: GetServerSidePropsContext
+) => {
+    const cookies = new Cookies(context.req, context.res);
+    const token = cookies.get("token");
+
+    if (!token) {
+        return {
+            redirect: {
+                permanent: false,
+                destination: "/",
+            },
+        };
+    }
+
+    const payload = validateJWT(token);
+
+    if (!payload) {
+        return {
+            redirect: {
+                permanent: false,
+                destination: "/",
+            },
+        };
+    }
+
+    const client = new DBConsoleClient(
+        process.env.CV_AWS_DB_TABLE_NAME,
+        process.env.CV_AWS_DB_USER_ACCESS_KEY,
+        process.env.CV_AWS_DB_USER_SECRET_KEY,
+        process.env.CV_AWS_DB_LOCATION
+    );
+
+    const user = await client.getUserById(payload.id);
+    return {
+        props: {
+            user,
+        },
+    };
+};
 export default ServerPage;
